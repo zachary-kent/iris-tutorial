@@ -145,7 +145,10 @@ The hope is that the maintenance and extension of this tutorial becomes a collab
 
 If you have suggestions for future topics or improvements for existing ones, please add them to [TODO.md](TODO.md).
 
+**Note**: by contributing to the Iris Tutorial you agree that your contributions will be released under the terms of Iris Tutorial's license — see [the LICENSE file](LICENSE).
+
 ### How to Contribute
+
 To contribute, we recommend following these steps:
 
 1. Fork the repository.
@@ -206,9 +209,17 @@ Below is a list of people who have contributed to the tutorial, sorted by last n
 Aarhus University\
 <birkedal@cs.au.dk>
 
+**Simon Gregersen**\
+Aarhus University\
+<gregersen@cs.au.dk>
+
+**Mathias Adam Møller**\
+Aarhus University\
+<mathias.adam.moeller@gmail.com>
+
 **Mathias Pedersen**\
 Aarhus University\
-<mp@cs.au.dk>
+<mathiasp9999@gmail.com>
 
 **Amin Timany**\
 Aarhus University\
