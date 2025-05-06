@@ -158,8 +158,11 @@ Example lambda : expr :=
 Lemma lambda_spec : ⊢ WP lambda {{ v, ⌜v = #20⌝ }}.
 Proof.
   rewrite /lambda.
-  (* exercise *)
-Admitted.
+  wp_pures.
+  iModIntro.
+  iPureIntro.
+  reflexivity.
+Qed.
 
 (* ================================================================= *)
 (** ** Resources *)
@@ -297,8 +300,15 @@ Proof.
   wp_cmpxchg_fail.
   wp_proj.
   wp_if.
-  (* exercise *)
-Admitted.
+  wp_load.
+  wp_pures.
+  wp_cmpxchg_suc.
+  wp_pures.
+  wp_load.
+  wp_pures.
+  iModIntro.
+  now iPureIntro.
+Qed.
 
 (**
   We finish this section with a final remark about the points-to
@@ -470,7 +480,7 @@ Proof.
   wp_store.
   wp_store.
   iApply "HΦ".
-  by iFrame.
+  now iFrame.
 Qed.
 
 (**

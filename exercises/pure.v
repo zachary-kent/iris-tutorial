@@ -120,12 +120,12 @@ Qed.
 *)
 Lemma pure_adj1 (φ : Prop) : φ → ⊢ ⌜φ⌝.
 Proof.
-  (* exercise *)
-Admitted.
+  now iPureIntro.
+Qed.
 
 Lemma pure_adj2 (P : iProp Σ) : ⌜⊢ P⌝ -∗ P.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (H).  iApply H.
+Qed.
 
 End proofs.
