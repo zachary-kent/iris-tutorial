@@ -1,5 +1,7 @@
 From iris.heap_lang Require Import lang proofmode notation.
 
+From stdpp Require Import list.
+
 (* ################################################################# *)
 (** * Arrays *)
 
@@ -86,6 +88,13 @@ Proof.
     iFrame.
 Qed.
 
+Lemma replicate_length (n : nat) {A} (x : A) : length (replicate n x) = n.
+Proof.
+  induction n.
+  - reflexivity.
+  - cbn. congruence.
+Qed.
+
 (**
   When allocating arrays, HeapLang requires the size to be greater than
   zero. So we add this to our precondition.
@@ -133,8 +142,23 @@ Lemma inc_spec a l :
     inc #a #(length l)
   {{{RET #(); a ↦∗ ((λ i : Z, #(i + 1)) <$> l)}}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "Ha HΦ".
+  iLöb as "IH" forall (a l Φ).
+  destruct l.
+  - wp_rec. wp_pures. iModIntro. by iApply "HΦ".
+  - wp_rec. wp_pures.
+    rewrite !fmap_cons !array_cons.
+    iDestruct "Ha" as "[Ha Has]".
+    wp_load.
+    wp_store.
+    wp_pures.
+    rewrite Nat2Z.inj_succ Z.sub_1_r Z.pred_succ.
+    iApply ("IH" with "Has").
+    iNext.
+    iIntros "Hanext".
+    iApply "HΦ".
+    iFrame.
+Qed.
 
 (* ================================================================= *)
 (** ** Reverse *)
@@ -165,7 +189,63 @@ Lemma reverse_spec a l :
     reverse #a #(length l)
   {{{RET #(); a ↦∗ rev l}}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "HP HΦ".
+  iLöb as "IH" forall (a l Φ).
+  wp_rec.
+  wp_pures.
+  case_bool_decide.
+  - wp_pures.
+    iModIntro.
+    iApply "HΦ".
+    apply (Nat2Z.inj_le _ 1) in H.
+    destruct l as [|v₁ [|v₂ l]]; try done.
+    cbn in H. inv H. inv H1.
+  - wp_pures.
+    rewrite Z.nle_gt in H.
+    apply (Nat2Z.inj_lt 1 _) in H.
+    induction l as [|v₁ l _] using rev_ind.
+    { cbn in H. lia. }
+    destruct l.
+    { cbn in H. lia. }
+    cbn in H.
+    rewrite array_app.
+    iDestruct "HP" as "[Ha Hrest]".
+    rewrite array_cons.
+    iDestruct "Ha" as "[Ha Hnext]".
+    rewrite array_cons.
+    rewrite array_nil.
+    iDestruct "Hrest" as "[Hrest _]".
+    iSimpl in "Hrest".
+    wp_load.
+    rewrite app_length.
+    iSimpl.
+    wp_pures.
+    replace (S (length l + 1)) with ((length l + 1) + 1) at 3 by lia.
+    change 1%Z with (Z.of_nat 1) at 4.
+    Set Printing Coercions.
+    replace ((Z.of_nat (length l + 1 + 1) - Z.of_nat 1)%Z) with (Z.of_nat (length l + 1)) by lia.
+    Unset Printing Coercions.
+    rewrite Nat.add_1_r.
+    wp_load.
+    wp_store.
+    replace (Z.of_nat (S (S (length l)))) with (Z.of_nat (S (length l)) + Z.of_nat 1)%Z by lia.
+    rewrite Z.add_simpl_r.
+    wp_store.
+    iSimpl in "HΦ".
+    rewrite rev_app_distr.
+    iSimpl in "HΦ".
+    rewrite array_cons.
+    rewrite array_app array_singleton.
+    wp_pures.
+    rewrite {2}Nat2Z.inj_succ Z.add_succ_comm.
+    rewrite (Z.add_simpl_r _ 2).
+    wp_apply ("IH" with "Hnext").
+    iIntros "Hl".
+    iApply "HΦ".
+    iFrame.
+    replace (a +ₗ 1 +ₗ length (rev l)) with (a +ₗ S (length (rev l))%Z)
+    by (rewrite Loc.eq_spec; simpl; lia).
+    by rewrite rev_length.
+Qed.
 
 End proofs.
