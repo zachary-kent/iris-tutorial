@@ -286,13 +286,12 @@ Proof.
     As discussed, in order to allocate the invariant, we must prove that
     it holds after one step.
   *)
-  { iNext. done. }
+  { by iNext. }
   (**
     With the invariant allocated, we can finish the proof.
   *)
   iModIntro.
-  iApply "HΦ".
-  iApply "Hinv".
+  by iApply "HΦ".
 Qed.
 
 (**
@@ -359,8 +358,17 @@ Proof.
     }
     (** ... and finish the proof of the forked thread. *)
     done.
-  - (* exercise *)
-Admitted.
+  - wp_seq.
+    iInv "Hinv" as "(%x & Hl & #Hx)".
+    wp_load.
+    iModIntro.
+    iSplitR "HΦ".
+    + iNext.
+      rewrite /prog_inv.
+      iExists x.
+      by iFrame.
+    + by iApply "HΦ".
+Qed.
 
 End proofs.
 
