@@ -261,15 +261,13 @@ Proof. compute_done. Qed.
 
 Lemma dfrac_op_both_disc : ∃ x : dfrac,
   DfracBoth (2/3) ⋅ DfracDiscarded = x.
-Proof.
-  (* exercise *)
-Admitted.
+Proof. by exists (DfracBoth (2/3)). Qed.
 
 Lemma dfrac_op_frac_both : ∃ x : dfrac,
   DfracOwn (1/4) ⋅ DfracBoth (2/4) = x.
 Proof.
-  (* exercise *)
-Admitted.
+  exists (DfracBoth (3/4)). compute_done.
+Qed.
 
 (**
   As dfrac is a record of type [RAMixin], we know that [⋅] must be
@@ -287,8 +285,8 @@ Qed.
 Lemma dfrac_op_comm (dq1 dq2 : dfrac) :
   dq1 ⋅ dq2 = dq2 ⋅ dq1.
 Proof.
-  (* exercise *)
-Admitted.
+  by rewrite dfrac_ra_mixin.(ra_comm _).
+Qed.
 
 (* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *)
 (** **** Valid Elements (the [Valid A]) *)
@@ -325,8 +323,8 @@ Qed.
 
 Lemma dfrac_valid_discarded : ✓ (DfracDiscarded).
 Proof.
-  (* exercise *)
-Admitted.
+  by rewrite dfrac_valid.
+Qed.
 
 Lemma dfrac_invalid_own : ¬ (✓ (DfracOwn (2/3) ⋅ DfracOwn (2/3))).
 Proof.
@@ -350,7 +348,7 @@ Print dfrac_pcore_instance.
   That is, the core of a [DfracOwn] resource is [None].
 *)
 Lemma dfrac_core_own (q : Qp) : pcore (DfracOwn q) = None.
-Proof. compute. done. Qed.
+Proof. compute_done. Qed.
 
 (**
   The core of [DfracDiscarded] is [Some DfracDiscarded].
@@ -392,13 +390,15 @@ Qed.
 
 Lemma dfrac_pre_disc_both : DfracDiscarded ≼ DfracBoth (3/4).
 Proof.
-  (* exercise *)
-Admitted.
+  exists (DfracBoth (3 / 4)).
+  compute_done.
+Qed.
 
 Lemma dfrac_pre_own_both : DfracOwn (2/4) ≼ DfracBoth (3/4).
 Proof.
-  (* exercise *)
-Admitted.
+  exists (DfracBoth (1 / 4)).
+  compute_done.
+Qed.
 
 (* ----------------------------------------------------------------- *)
 (** *** Frame Preserving Update *)
@@ -541,8 +541,11 @@ Proof.
   assert ((DfracBoth (1 / 4)) = (DfracDiscarded ⋅? Some (DfracOwn (1 / 4)))) as ->.
   { compute_done. }
   rewrite cmra_opM_opM_assoc_L.
-  (* exercise *)
-Admitted.
+  assert (∀ dq mz, ✓ (dq ⋅? mz) → ✓ (DfracDiscarded ⋅? mz)) as Hdfrac_discard_update_discrete.
+  { intros dq. rewrite -cmra_discrete_update. apply dfrac_discard_update. }
+  apply (Hdfrac_discard_update_discrete (DfracOwn (1/2))).
+  by rewrite -cmra_opM_opM_assoc_L.
+Qed.
 
 (* ================================================================= *)
 (** ** Example Resource Algebra *)
@@ -746,8 +749,10 @@ Qed.
 Lemma agree_valid_opL (a b : A) : ✓ (to_agree a ⋅ to_agree b) →
   to_agree a ⋅ to_agree b ≡ to_agree a.
 Proof.
-  (* exercise *)
-Admitted.
+  rewrite to_agree_op_valid.
+  intros ->.
+  apply agree_idemp.
+Qed.
 
 (**
   Due to idempotency and the fact that the combination of equivalent
@@ -759,8 +764,15 @@ Local Lemma to_agree_included (a b : A) :
   to_agree a ≼ to_agree b ↔ a ≡ b.
 Proof.
   split.
-  (* exercise *)
-Admitted.
+  - intros [x H].
+    apply to_agree_op_valid.
+    rewrite H.
+    rewrite assoc.
+    rewrite agree_idemp.
+    rewrite -H.
+    apply agree_valid.
+  - by intros ->.
+Qed.
 
 (**
   The usefulness of the agree construction is demonstrated by the fact
@@ -854,6 +866,7 @@ Qed.
 *)
 
 Print dfrac_agreeR.
+
 
 (**
   This construction is a simple way to make the resources of some
@@ -1041,8 +1054,7 @@ Proof.
   (** Combine the tokens and deduce validity. *)
   iCombine "Htoken1 Htoken2" as "Hcombined" gives "%Hvalid".
   iPureIntro.
-  apply token_exclusive.
-  apply Hvalid.
+  by apply token_exclusive.
 Qed.
 
 (**
@@ -1064,8 +1076,10 @@ Lemma own_dfrac_both_disc (γ : gname) :
   own γ (DfracBoth (2/3)) ⊢
   (own γ (DfracBoth (2/3))) ∗ (own γ DfracDiscarded).
 Proof.
-  (* exercise *)
-Admitted.
+  change (DfracBoth (2/3)) with (DfracBoth (2/3) ⋅ DfracDiscarded) at 1.
+  iIntros "[? ?]".
+  iFrame.
+Qed.
 
 (* ----------------------------------------------------------------- *)
 (** *** Update Modality *)
@@ -1112,7 +1126,7 @@ Qed.
   [iMod], and [!>] to invoke [iModIntro].
 *)
 
-Lemma upd_assumption' (P Q: iProp Σ): (P -∗ Q) ∗ (|==> P) ⊢ |==> Q.
+Lemma upd_assumption' (P Q : iProp Σ): (P -∗ Q) ∗ (|==> P) ⊢ |==> Q.
 Proof.
   iIntros "[HPQ >HuP] !>".
   by iApply "HPQ".
@@ -1146,8 +1160,8 @@ Qed.
 
 Lemma upd_idemp (P : iProp Σ): (|==> |==> P) ⊢ |==> P.
 Proof.
-  (* exercise *)
-Admitted.
+  by iIntros ">>P !>".
+Qed.
 
 (* ----------------------------------------------------------------- *)
 (** *** Allocation and Updates *)
@@ -1180,8 +1194,9 @@ Qed.
 
 Lemma dfrac_alloc_one : ⊢ |==> ∃ γ, own γ (DfracOwn 1).
 Proof.
-  (* exercise *)
-Admitted.
+  iApply own_alloc.
+  by rewrite dfrac_valid.
+Qed.
 
 (**
   After having allocated new resources, we may update them using the
@@ -1214,9 +1229,12 @@ Qed.
 *)
 
 Lemma hoare_triple_dfrac (γ : gname):
-  {{{ own γ (DfracOwn 1) }}} #1 + #1 {{{v , RET v; own γ DfracDiscarded }}}.
+  {{{ own γ (DfracOwn 1) }}} #1 + #1 {{{ v , RET v; own γ DfracDiscarded }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "HP HΦ".
+  wp_pures.
+  iMod (own_dfrac_update with "HP") as "H".
+  by iApply "HΦ".
+Qed.
 
 End ghost.

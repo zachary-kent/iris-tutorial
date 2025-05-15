@@ -58,6 +58,8 @@ Proof.
   by iApply "HPQ".
 Qed.
 
+Check fupd_wp.
+
 (**
   We may _always_ add a fancy update modality in front of a WP
   (concretely with the [fupd_wp] lemma), so we can also remove laters
@@ -120,7 +122,7 @@ Proof.
     To prove that the CAS succeeds, we need to know that [w] equals [5].
     Thus, we must open the invariant.
   *)
-  wp_bind (CmpXchg #l #5 #6)%E.
+  wp_bind (CmpXchg _ _ _)%E.
   iInv "Hinv" as "[Heq HP]".
   (**
     Opening the invariant only gives us that [w] equals [5] later.
