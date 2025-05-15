@@ -428,7 +428,6 @@ Proof.
   wp_pures.
   iMod (inv_alloc N _ (parallel_add_inv r) with "[Hr]") as "#I".
   {
-    iNext.
     iExists 0.
     iFrame.
   }
@@ -452,7 +451,29 @@ Proof.
       by apply Zeven_plus_Zeven.
     }
     by iApply "HΦ'".
-  (* exercise *)
-Admitted.
+  - iIntros (Φ') "!> _ HΦ'".
+    iInv "I" as "(%n & Hr & >%Hn)".
+    wp_faa.
+    iModIntro.
+    iSplitL "Hr".
+    + iNext.
+      rewrite /parallel_add_inv.
+      iExists (n + 6)%Z.
+      iFrame.
+      iPureIntro.
+      by apply Zeven_plus_Zeven.
+    + by iApply "HΦ'". 
+  - done.
+  - iIntros (v₁ v₂) "_".
+    wp_seq.
+    iInv "I" as "(%n & Hr & >%Hn)".
+    wp_load.
+    iModIntro.
+    iSplitL "Hr".
+    + iNext.
+      iExists n.
+      by iFrame.
+    + by iApply "HΦ".
+Qed.
 
 End parallel_add.
