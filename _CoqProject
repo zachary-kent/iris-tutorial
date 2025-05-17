@@ -44,3 +44,5 @@ exercises/adequacy.v
 exercises/merge_sort.v
 exercises/custom_ra.v
 exercises/ofe.v
+exercises/rwcas/spec.v
+exercises/rwcas/rwcas.v

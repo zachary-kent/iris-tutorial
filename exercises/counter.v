@@ -140,28 +140,21 @@ Proof.
     the authoritative element and the authoritative element must be
     valid.
   *)
-  apply auth_both_valid_discrete.
-  split.
-  - (** Inclusion for [max_nat] turns out to be the natural ordering. *)
-    apply max_nat_included; simpl.
-    reflexivity.
-  - (** All elements of [max_nat] are valid. *)
-    cbv.
-    done.
+  by apply auth_both_valid_discrete. 
 Qed.
 
 Lemma state_valid γ n m :
   own γ (● MaxNat n) -∗
   own γ (◯ MaxNat m) -∗
-  ⌜m ≤ n⌝.
+  ⌜m ≤ n⌝ ∗ own γ (● MaxNat n) ∗ own γ (◯ MaxNat m) .
 Proof.
   iIntros "Hγ Hγ'".
   iPoseProof (own_valid_2 with "Hγ Hγ'") as "%H".
+  iFrame.
   iPureIntro.
   apply auth_both_valid_discrete in H.
   destruct H as [H _].
-  apply max_nat_included in H; cbn in H.
-  done.
+  by apply max_nat_included in H.
 Qed.
 
 Lemma update_state γ n :
@@ -181,8 +174,8 @@ Proof.
     as we know what the whole of the state is.
   *)
   apply auth_update_alloc.
-  apply max_nat_local_update; cbn.
-  by apply le_S.
+  apply max_nat_local_update.
+  cbn. lia.
 Qed.
 
 (* ================================================================= *)
@@ -196,14 +189,34 @@ Qed.
 Lemma mk_counter_spec :
   {{{ True }}} mk_counter #() {{{ c γ, RET c; is_counter c γ 0}}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "_ HΦ".
+  rewrite /mk_counter.
+  wp_pures.
+  wp_alloc l as "Hl".
+  iPoseProof alloc_initial_state as ">(%γ & Hγ & Hγ')".
+  iApply ("HΦ" $! _ γ).
+  rewrite /is_counter.
+  iExists l.
+  iSplitR.
+  - done.
+  - iFrame.
+    iApply inv_alloc.
+    iFrame.
+Qed.
 
 Lemma read_spec c γ n :
   {{{ is_counter c γ n }}} read c {{{ (u : nat), RET #u; ⌜n ≤ u⌝ }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  rewrite /read /is_counter.
+  iIntros (Φ) "(%l & -> & Hγ' & #Hinv) HΦ".
+  wp_pures.
+  iInv "Hinv" as ">(%m & Hl & Hγ)".
+  wp_load.
+  iPoseProof (state_valid with "Hγ Hγ'") as "(%Hle & Hγ & Hγ')".
+  iModIntro.
+  iFrame.
+  by iApply "HΦ".
+Qed.
 
 Lemma incr_spec c γ n :
   {{{ is_counter c γ n }}}
@@ -227,8 +240,28 @@ Proof.
     injection e as e.
     apply (inj Z.of_nat) in e.
     subst m'.
-    (* exercise *)
-Admitted.
+    iPoseProof (state_valid with "Hγ Hγ'") as "(%Hle & Hγ & _)".
+    iPoseProof (update_state with "Hγ") as ">[Hγ'' Hγ''']".
+    iModIntro.
+    iSplitL "Hl Hγ''".
+    + replace (Z.of_nat m + 1)%Z with (Z.of_nat (S m))%Z by lia.
+      iFrame.
+    + wp_pures.
+      iApply "HΦ".
+      rewrite /is_counter.
+      iModIntro.
+      iSplitR; first done.
+      iExists l.
+      iSplitR; first done.
+      iSplitL; try done.
+      rewrite <- (max_l (S m) (S n)) by lia.
+      by iDestruct "Hγ'''" as "[_ ?]".
+  - wp_cmpxchg_fail.
+    iFrame.
+    iModIntro.
+    wp_pures.
+    by wp_apply "IH".
+Qed.
 
 (* ================================================================= *)
 (** ** A Simple Counter Client *)
