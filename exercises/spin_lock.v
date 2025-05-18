@@ -132,8 +132,8 @@ Proof.
     iExists false.
     iFrame.
   }
-  iModIntro.
   iApply "HΦ".
+  iModIntro.
   iExists l.
   by iFrame.
 Qed.
@@ -149,7 +149,7 @@ Proof.
   iLöb as "IH".
   wp_rec.
   wp_bind (CmpXchg _ _ _).
-  iInv "I" as ([]) "[Hl Hγ]".
+  iInv "I" as ([|]) "[Hl Hγ]".
   - wp_cmpxchg_fail.
     iModIntro.
     iSplitL "Hl Hγ".
@@ -180,8 +180,17 @@ Qed.
 Lemma release_spec γ v P :
   {{{ is_lock γ v P ∗ locked γ ∗ P }}} release v {{{ RET #(); True }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros "%Φ ((%l & -> & #I) & tok & HP) HΦ".
+  rewrite /release.
+  wp_pures.
+  iInv "I" as "(%b & Hl & _)".
+  wp_store.
+  rewrite /lock_inv.
+  iModIntro.
+  iSplitL "tok Hl HP".
+  - by iFrame.
+  - by iApply "HΦ".
+Qed.
 
 (* ================================================================= *)
 (** ** Example Client *)

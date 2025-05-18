@@ -282,8 +282,26 @@ Lemma par_incr :
     read "c"
   {{{ n, RET #(S n); True }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "_ HΦ".
+  wp_apply mk_counter_spec.
+  { done. }
+  (* iIntros (c γ) "(%l & -> & #Hγfrag & #Hinv)". *)
+  iIntros (c γ) "#Hcounter".
+  wp_pures.
+  set Q := (λ v : val, is_counter c γ 1).
+  wp_apply (wp_par Q Q); rewrite /Q.
+  + wp_apply (incr_spec with "Hcounter").
+    by iIntros (m) "[_ ?]".
+  + wp_apply (incr_spec with "Hcounter").
+    by iIntros (m) "[_ ?]".
+  + iIntros (v₁ v₂) "[#Hcounter1 _]".
+    iNext.
+    wp_pures.
+    wp_apply (read_spec with "Hcounter1"). 
+    iIntros ([| m] Hle).
+    { inversion Hle. }
+    by iApply "HΦ".
+Qed.
 
 End spec1.
 End spec1.
@@ -361,10 +379,8 @@ Proof.
   - apply Some_valid.
     apply pair_valid.
     split.
-    + apply frac_valid.
-      reflexivity.
-    + cbv.
-      done.
+    + by apply frac_valid.
+    + done.
 Qed.
 
 (**
@@ -385,8 +401,7 @@ Proof.
   apply Some_pair_included in H.
   destruct H as [_ H].
   rewrite Some_included_total in H.
-  apply nat_included in H.
-  done.
+  by apply nat_included in H.
 Qed.
 
 (**
@@ -406,10 +421,8 @@ Proof.
   apply auth_both_valid_discrete in H.
   destruct H as [H _].
   apply Some_included_exclusive in H.
-  - destruct H as [_ H]; cbn in H.
-    apply leibniz_equiv in H.
-    done.
-  - apply _.
+  - destruct H as [_ H]; by cbn in H.
+  - auto. apply _.
   - done.
 Qed.
 
@@ -440,22 +453,58 @@ Qed.
 Lemma mk_counter_spec :
   {{{ True }}} mk_counter #() {{{ c γ, RET c; is_counter c γ 0 1}}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "_ HΦ".
+  rewrite /mk_counter.
+  wp_pures.
+  wp_alloc l as "Hl".
+  iPoseProof alloc_initial_state as ">(%γ & Hγauth & Hγfrag)".
+  iApply ("HΦ" $! #l γ).
+  rewrite /is_counter.
+  iExists l.
+  iSplitR; first done.
+  iSplitL "Hγfrag".
+  - by iFrame.
+  - iApply inv_alloc. iFrame.
+Qed.
 
 Lemma read_spec (c : val) (γ : gname) (n : nat) (q : Qp) :
   {{{ is_counter c γ n q }}}
     read c
   {{{ (u : nat), RET #u; is_counter c γ n q ∗ ⌜n ≤ u⌝ }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "(%l & -> & Hγfrag & #Hinv) HΦ".
+  rewrite /read.
+  wp_pures.
+  iInv "Hinv" as ">(%m & Hl & Hγauth)".
+  iPoseProof (state_valid with "Hγauth Hγfrag") as "%Hle".
+  wp_load.
+  iFrame.
+  iApply "HΦ".
+  iModIntro.
+  rewrite /is_counter.
+  iFrame.
+  iSplitL; try done.
+  iExists l.
+  by iSplit.
+Qed.
 
 Lemma read_spec_full (c : val) (γ : gname) (n : nat) :
   {{{ is_counter c γ n 1 }}} read c {{{ RET #n; is_counter c γ n 1 }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "(%l & -> & Hγfrag & #Hinv) HΦ".
+  rewrite /read.
+  wp_pures.
+  iInv "Hinv" as ">(%m & Hl & Hγauth)".
+  iPoseProof (state_valid_full with "Hγauth Hγfrag") as "->".
+  wp_load.
+  iFrame.
+  iApply "HΦ".
+  iModIntro.
+  rewrite /is_counter.
+  iFrame.
+  iExists l.
+  by iSplit.
+Qed.
 
 Lemma incr_spec (c : val) (γ : gname) (n : nat) (q : Qp) :
   {{{ is_counter c γ n q }}}
@@ -479,8 +528,32 @@ Proof.
     apply (inj Z.of_nat) in e.
     subst m'.
     wp_cmpxchg_suc.
-    (* exercise *)
-Admitted.
+    replace (Z.of_nat m + 1)%Z with (Z.of_nat (S m)) by lia.
+    iPoseProof (state_valid with "Hγ Hγ'") as "%Hle".
+    iPoseProof (update_state with "[Hγ Hγ']") as ">[Hγ Hγ']".
+    { iFrame. }
+    iModIntro.
+    iSplitL "Hl Hγ".
+    + iFrame.
+    + wp_pures.
+      iApply "HΦ".
+      iModIntro.
+      iSplitR; first done.
+      iFrame.
+      iExists l.
+      by iSplit.
+  - wp_cmpxchg_fail.
+    iModIntro.
+    iSplitL "Hl Hγ".
+    + iExists m'.
+      iFrame.
+    + wp_pures.
+      iApply ("IH" with "Hγ'").
+      iNext.
+      iIntros (p) "[%Hle Hcounter]".
+      iApply "HΦ".
+      by iFrame.
+Qed.
 
-End spec2.
+End spec2
 End spec2.

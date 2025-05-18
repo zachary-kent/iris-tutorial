@@ -574,6 +574,9 @@ Qed.
 
 Section exclusive.
 
+
+Check Exclusive.
+
 (**
   Our first example is the `exclusive' resource algebra. The key idea is
   that it makes all combinations of resources from some resource algebra
