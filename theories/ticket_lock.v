@@ -280,7 +280,7 @@ Lemma release_spec γ l P :
     iPoseProof (own_valid_2 with "Hexcl Hexcl'") as "%H".
     rewrite auth_frag_valid /= in H.
     rewrite pair_valid /= in H.
-    by destruct H as [H _].
+    destruct H as [[] _].
   }
   wp_load.
   iPoseProof (own_valid_2 with "Hγ Hexcl") as "%H".
