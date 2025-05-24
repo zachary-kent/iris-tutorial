@@ -74,6 +74,8 @@ Definition merge_sort : val :=
 (* ================================================================= *)
 (** ** Specifications *)
 
+Check nil_length_inv.
+
 Section proofs.
 Context `{!heapGS Σ, !spawnG Σ}.
 

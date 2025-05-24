@@ -1,4 +1,4 @@
-From stdpp Require Export sorting.
+From stdpp Require Export base list sorting finite.
 From iris.heap_lang Require Import array lang proofmode notation par.
 
 (* ################################################################# *)
@@ -15,30 +15,30 @@ From iris.heap_lang Require Import array lang proofmode notation par.
 *)
 
 (**
-  We begin by implementing a function which merges two arrays [a1] and
-  [a2] of lengths [n1] and [n2] into an array [b] of length [n1 + n2].
+  We begin by implementing a function which merges two arrays [a₁] and
+  [a₂] of lengths [n1] and [n2] into an array [b] of length [n1 + n2].
 *)
 Definition merge : val :=
-  rec: "merge" "a1" "n1" "a2" "n2" "b" :=
-  (** If [a1] is empty, we simply copy the second [a2] into [b]. *)
+  rec: "merge" "a₁" "n1" "a₂" "n2" "b" :=
+  (** If [a₁] is empty, we simply copy the second [a₂] into [b]. *)
   if: "n1" = #0 then
-    array_copy_to "b" "a2" "n2"
-  (** Likewise if [a2] is empty instead. *)
+    array_copy_to "b" "a₂" "n2"
+  (** Likewise if [a₂] is empty instead. *)
   else if: "n2" = #0 then
-    array_copy_to "b" "a1" "n1"
+    array_copy_to "b" "a₁" "n1"
   else
   (**
-    Otherwise, we compare the first elements of [a1] and [a2]. The
+    Otherwise, we compare the first elements of [a₁] and [a₂]. The
     smallest is removed and written to [b]. Rinse and repeat.
   *)
-    let: "x1" := !"a1" in
-    let: "x2" := !"a2" in
+    let: "x1" := !"a₁" in
+    let: "x2" := !"a₂" in
     if: "x1" ≤ "x2" then
       "b" <- "x1";;
-      "merge" ("a1" +ₗ #1) ("n1" - #1) "a2" "n2" ("b" +ₗ #1)
+      "merge" ("a₁" +ₗ #1) ("n1" - #1) "a₂" "n2" ("b" +ₗ #1)
     else
       "b" <- "x2";;
-      "merge" "a1" "n1" ("a2" +ₗ #1) ("n2" - #1) ("b" +ₗ #1).
+      "merge" "a₁" "n1" ("a₂" +ₗ #1) ("n2" - #1) ("b" +ₗ #1).
 
 (**
   To sort an array [a], we split the array in half, sort each sub-array
@@ -77,29 +77,93 @@ Definition merge_sort : val :=
 Section proofs.
 Context `{!heapGS Σ, !spawnG Σ}.
 
+Search (Z.of_nat ?x = Z.of_nat ?y → ?x = ?y).
+
 (**
   We begin by giving a specification for the [merge] function. To merge
-  two arrays [a1] and [a2], we require that they are both already
+  two arrays [a₁] and [a₂], we require that they are both already
   sorted. Furthermore, we need the result array [b] to have enough
   space, though we don't care what it contains.
 *)
-Lemma merge_spec (a1 a2 b : loc) (l1 l2 : list Z) (l : list val) :
+
+Lemma merge_spec (a₁ a₂ b : loc) (l₁ l₂ : list Z) (l : list val) :
   {{{
-    a1 ↦∗ ((λ x : Z, #x) <$> l1) ∗
-    a2 ↦∗ ((λ x : Z, #x) <$> l2) ∗ b ↦∗ l ∗
-    ⌜StronglySorted Z.le l1⌝ ∗
-    ⌜StronglySorted Z.le l2⌝ ∗
-    ⌜length l = (length l1 + length l2)%nat⌝
+    a₁ ↦∗ ((λ x : Z, #x) <$> l₁) ∗
+    a₂ ↦∗ ((λ x : Z, #x) <$> l₂) ∗ b ↦∗ l ∗
+    ⌜StronglySorted Z.le l₁⌝ ∗
+    ⌜StronglySorted Z.le l₂⌝ ∗
+    ⌜length l = (length l₁ + length l₂)%nat⌝
   }}}
-    merge #a1 #(length l1) #a2 #(length l2) #b
+    merge #a₁ #(length l₁) #a₂ #(length l₂) #b
   {{{(l : list Z), RET #();
-    a1 ↦∗ ((λ x : Z, #x) <$> l1) ∗
-    a2 ↦∗ ((λ x : Z, #x) <$> l2) ∗
+    a₁ ↦∗ ((λ x : Z, #x) <$> l₁) ∗
+    a₂ ↦∗ ((λ x : Z, #x) <$> l₂) ∗
     b ↦∗ ((λ x : Z, #x) <$> l) ∗
     ⌜StronglySorted Z.le l⌝ ∗
-    ⌜l1 ++ l2 ≡ₚ l⌝
+    ⌜l₁ ++ l₂ ≡ₚ l⌝
   }}}.
 Proof.
+  iIntros "%Φ (Ha₁ & Ha₂ & Hb & %Hsorted₁ & %Hsorted₂ & %Hlen) HΦ".
+  iLöb as "IH" forall (a₁ a₂ b l₁ l₂ l Hsorted₁ Hsorted₂ Hlen).
+  wp_rec.
+  wp_pures.
+  case_bool_decide.
+  - simplify_eq.
+    wp_pures.
+    rewrite -Nat2Z.inj_0 in H.
+    apply (inj Z.of_nat) in H.
+    rewrite H /= in Hlen.
+    wp_apply (wp_array_copy_to with "[$Hb $Ha₂]").
+    + congruence.
+    + by rewrite map_length.
+    + iIntros "[Hb Ha₂]".
+      iApply "HΦ".
+      iFrame.
+      iSplit.
+      * done.
+      * destruct l₁; by simplify_eq.
+  - wp_pures.
+    case_bool_decide.
+    wp_pures.
+    rewrite -Nat2Z.inj_0 in H0.
+    simplify_eq.
+    rewrite H0 /= in Hlen.
+    wp_apply (wp_array_copy_to with "[$Hb $Ha₁]").
+    + lia.
+    + by rewrite map_length.
+    + iIntros "[Hb Ha₁]".
+      iApply "HΦ".
+      iFrame.
+      iSplit.
+      * done.
+      * destruct l₂; last discriminate.
+        by rewrite app_nil_r.
+    + wp_pures.
+      destruct l₁ as [| h₁ t₁]; simplify_eq.
+      destruct l₂ as [| h₂ t₂]; simplify_eq.
+      clear H H0.
+      repeat rewrite fmap_cons.
+      iPoseProof (array_cons with "Ha₁") as "[Ha₁ Ha₁']".
+      iPoseProof (array_cons with "Ha₂") as "[Ha₂ Ha₂']".
+      destruct l; simplify_eq.
+      iPoseProof (array_cons with "Hb") as "[Hb Hb']".
+      wp_load.
+      wp_pures.
+      wp_load.
+      wp_pures.
+      case_bool_decide.
+      * wp_pures.
+        wp_store.
+        wp_pures.
+        replace (Z.of_nat (S (length t₁)) - 1)%Z with (Z.of_nat (length t₁)) by lia.
+        iApply "IH".
+        destruct l; simplify_eq.
+        
+
+      iApply array_cons in "Ha₁".
+      rewrite /=.
+  rewrite /merge.
+
   (* exercise *)
 Admitted.
 

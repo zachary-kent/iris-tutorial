@@ -49,8 +49,10 @@ CoFixpoint fun2stream (f : nat → nat) : stream :=
 
 Lemma fun2stream_nth (f : nat → nat) (n : nat) : nth (fun2stream f) n = f n.
 Proof.
-  (* exercise *)
-Admitted.
+  revert f. induction n.
+  - done.
+  - intros f. by cbn.
+Qed.
 
 Section ofe.
 
@@ -87,8 +89,20 @@ Local Instance stream_dist_instance : Dist stream := λ n s1 s2,
 Lemma stream_ofe_mixin : OfeMixin stream.
 Proof.
   split.
-  (* exercise *)
-Admitted.
+  - intros s₁ s₂. split.
+    + by intros Heq n i Hle.
+    + intros Hext n. by eapply Hext.
+  - intros n. split.
+    + done.
+    + intros s₁ s₂ Heq i Hle.
+      symmetry.
+      auto.
+    + intros s₁ s₂ s₃ Heq Heq' i Hle.
+      transitivity (nth s₂ i); auto.
+  - intros n m s₁ s₂ Heq Hlt i Hle.
+    apply Heq.
+    lia.
+Qed.
 
 (**
   We can now package this together into an OFE.
@@ -211,8 +225,10 @@ Fixpoint sapp (l : list nat) (s : stream) : stream :=
 *)
 Global Instance sapp_ne (l : list nat) : NonExpansive (sapp l).
 Proof.
-  (* exercise *)
-Admitted.
+  intros n s₁ s₂ Heq. induction l; cbn.
+  - done.
+  - by f_equiv.
+Qed.
 
 Global Instance sapp_proper (l : list nat) : Proper ((≡) ==> (≡)) (sapp l).
 Proof. apply ne_proper, _. Qed.
@@ -379,13 +395,18 @@ Qed.
 Lemma stream_map_nth (f : nat → nat) (s : stream) (n : nat) :
   nth (stream_map f s) n = f (nth s n).
 Proof.
-  (* exercise *)
-Admitted.
+  revert f s. induction n.
+  - done.
+  - intros f s. by cbn.
+Qed.
 
 Global Instance stream_map_ne (f : nat → nat) : NonExpansive (stream_map f).
 Proof.
-  (* exercise *)
-Admitted.
+  intros n s₁ s₂ Heq i Hle.
+  do 2 rewrite stream_map_nth.
+  f_equal.
+  by apply Heq.
+Qed.
 
 (**
   If we now wanted to create a stream of all the powers of 2, we would
@@ -415,8 +436,12 @@ Definition power2 : stream :=
 Lemma power2_helper_unfold (n : nat) :
   power2_helper n ≡ SCons n (stream_map (λ n, n * 2) (power2_helper n)).
 Proof.
-  (* exercise *)
-Admitted.
+  intros k. revert n. induction k.
+  - done.
+  - intros n. simpl.
+    rewrite IHk.
+    by destruct k.
+Qed.
 
 Lemma power2_unfold :
   power2 ≡ SCons 1 (stream_map (λ n, n * 2) power2).

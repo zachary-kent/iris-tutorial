@@ -250,35 +250,18 @@ Proof.
   iSplitR "HΦ".
   - replace (Z.of_nat o' + 1)%Z with (Z.of_nat (S o')) by lia.
     iCombine "●Hγ' Hlocked" as "Hγ".
-   iMod (own_update _ _ (● (Excl' (S o), GSet (set_seq 0 n)) ⋅ ◯ (Excl' (S o), ε)) with "Hγ") as "[Hγ Hexcl]".
-   { apply auth_update. }
-
+   iMod (own_update _ _ (● (Excl' (S o'), GSet (set_seq 0 n')) ⋅ ◯ (Excl' (S o'), ε)) with "Hγ") as "[Hγ Hexcl]".
+   { apply auth_update.
+     apply prod_local_update_1.
+     apply option_local_update.
+     by apply exclusive_local_update. }
+    iModIntro.
+    iExists (S o'), n'.
+    iFrame.
+    iNext.
+    iLeft.
+    iFrame.
   - by iApply "HΦ".
-  { admit. }
-  iNext.
-  (* Frame preserving update; remove ticket from waiting queue *)
-
-  rewrite /issued.
-  iMod (own_update _ _ (● (Excl' o'', GSet ∅) ⋅ ◯ (Excl' o'', GSet ∅)) with "Hγ") as "[●Hγ ◯Hγ]".
-  { }
-  iSplitL "Hlₒ Hlₙ Hlocked' Hγ HP".
-
-    iAssert (locked γ) as "Hl". iSplitL "Hlo".
-    { rewrite /locked. iExists o. iFrame. }
-    iApply locked_excl.
-    iApply (locked_excl with "[$o Hlocked] [$o' Hlo]").
-   rewrite /locked_by.
-   iPoseProof (own_valid_2 with "Hlo Hlocked") as "%H".
-   rewrite auth_frag_valid /= in H.
-   rewrite pair_valid /= in H.
-   destruct H as [[] _].
-  }
-  
-
-  wp_load.
-  iSplitL "Hlₒ Hlₙ".
-  + iFrame. admit. 
-  (* exercise *)
-Admitted.
+Qed.
 
 End proofs.
